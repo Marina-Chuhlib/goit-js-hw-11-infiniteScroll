@@ -30,6 +30,11 @@ input {
   width: 340px;
 }
 
+button {
+  border: 1px solid #005b96;
+  border-radius: 4px;
+}
+
 .gallery {
   display: flex;
   flex-wrap: wrap;
@@ -58,4 +63,14 @@ input {
 
 .info-item__value {
   display: block;
+}
+
+.load-more[hidden] {
+  display: none;
+}
+
+.load-more {
+  display: block;
+  margin-left: auto;
+  margin-right: auto;
 }
