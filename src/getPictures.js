@@ -9,9 +9,11 @@ export async function getPictures(item) {
     const response = await axios.get(
       `${API_URL}?key=${KEY}&q=${item}&image_type=photo&orientation=horizontal&safesearch=true&page=${page}&per_page=${perPage}`
     );
+
     return response;
   } catch (error) {
-    [];
+    console.log(error);
+    throw new Error('Error', error.message);
   }
 }
 

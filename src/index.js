@@ -1,4 +1,5 @@
 import './css/styles.css';
+import axios from 'axios';
 import { getPictures } from './getPictures';
 import { getGalleryMarkup } from './getGalleryMarkup';
 import { Notify } from 'notiflix/build/notiflix-notify-aio';
@@ -100,7 +101,7 @@ const onLoadMore = e => {
       }
     })
     .catch(error => {
-      [];
+      messageNotify();
     });
 };
 
