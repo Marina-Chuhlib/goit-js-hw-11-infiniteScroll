@@ -26,7 +26,7 @@ export let page = 1;
 export const perPage = 40;
 
 const render = () => {
-  const gallery = response.map(getGalleryMarkup);
+  const gallery = response.data.hits.map(getGalleryMarkup);
   galleryRef.insertAdjacentHTML('beforeend', gallery.join(''));
 };
 
@@ -48,34 +48,56 @@ const onSearch = e => {
     return messageNotify();
   }
 
-  getPictures(inputValue)
-    .then(({ data }) => {
-      response = data.hits;
+  // getPictures(inputValue)
+  //   .then(({ data }) => {
+  //     response = data.hits;
 
-      // response.length
-      if (data.totalHits === 0) {
+  //     // response.length
+  //     if (data.totalHits === 0) {
+  //       formRef.reset();
+  //       return messageNotify();
+  //     }
+
+  //     Notify.success(`Hooray! We found ${data.totalHits} images.`);
+
+  //     // window.scrollBy({
+  //     //   top: cardHeight * 2,
+  //     //   behavior: 'smooth',
+  //     // });
+
+  //     render();
+
+  //     loadMoreBtnRef.removeAttribute('hidden');
+
+  //     simpleLightbox.refresh();
+  //   })
+  //   .catch(error => {
+  //     messageNotify();
+  //   });
+
+  // loadMoreBtnRef.setAttribute('hidden', true);
+
+  async function createImgPage() {
+    try {
+      response = await getPictures(inputValue);
+
+      await render();
+
+      if (response.data.totalHits === 0) {
         formRef.reset();
         return messageNotify();
       }
 
-      Notify.success(`Hooray! We found ${data.totalHits} images.`);
-
-      // window.scrollBy({
-      //   top: cardHeight * 2,
-      //   behavior: 'smooth',
-      // });
-
-      render();
-
-      loadMoreBtnRef.removeAttribute('hidden');
+      Notify.success(`Hooray! We found ${response.data.totalHits} images.`);
 
       simpleLightbox.refresh();
-    })
-    .catch(error => {
-      [];
-    });
-
-  loadMoreBtnRef.setAttribute('hidden', true);
+      loadMoreBtnRef.removeAttribute('hidden');
+    } catch (error) {
+      console.log(error.message);
+      messageNotify();
+    }
+  }
+  createImgPage();
 };
 
 formRef.addEventListener('submit', onSearch);
@@ -83,15 +105,15 @@ formRef.addEventListener('submit', onSearch);
 const onLoadMore = e => {
   page += 1;
 
-  getPictures(inputValue)
-    .then(({ data }) => {
-      response = data.hits;
+  async function createImgPage() {
+    try {
+      response = await getPictures(inputValue);
 
-      render();
-
+      await render();
       simpleLightbox.refresh();
 
-      const amount = data.totalHits / perPage;
+      const amount = Math.ceil(response.data.totalHits / perPage);
+
       if (amount < page) {
         loadMoreBtnRef.setAttribute('hidden', true);
         formRef.reset();
@@ -99,10 +121,33 @@ const onLoadMore = e => {
           "We're sorry,but you've reached the end of search results."
         );
       }
-    })
-    .catch(error => {
+    } catch (error) {
+      console.log(error.message);
       messageNotify();
-    });
+    }
+  }
+  createImgPage();
+
+  // getPictures(inputValue)
+  //   .then(({ data }) => {
+  //     response = data.hits;
+
+  //     render();
+
+  //     simpleLightbox.refresh();
+
+  //     const amount = data.totalHits / perPage;
+  //     if (amount < page) {
+  //       loadMoreBtnRef.setAttribute('hidden', true);
+  //       formRef.reset();
+  //       Notify.failure(
+  //         "We're sorry,but you've reached the end of search results."
+  //       );
+  //     }
+  //   })
+  //   .catch(error => {
+  //     messageNotify();
+  //   });
 };
 
 loadMoreBtnRef.addEventListener('click', onLoadMore);
