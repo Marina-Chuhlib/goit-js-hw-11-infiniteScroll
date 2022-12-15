@@ -1,5 +1,4 @@
 import './css/styles.css';
-import axios from 'axios';
 import { getPictures } from './getPictures';
 import { getGalleryMarkup } from './getGalleryMarkup';
 import { Notify } from 'notiflix/build/notiflix-notify-aio';
@@ -48,6 +47,28 @@ const onSearch = e => {
     return messageNotify();
   }
 
+  async function createImgPage() {
+    try {
+      response = await getPictures(inputValue);
+
+      await render();
+
+      if (response.data.totalHits === 0) {
+        formRef.reset();
+        return messageNotify();
+      }
+
+      Notify.success(`Hooray! We found ${response.data.totalHits} images.`);
+
+      simpleLightbox.refresh();
+      loadMoreBtnRef.removeAttribute('hidden');
+    } catch (error) {
+      console.log(error.message);
+      messageNotify();
+    }
+  }
+  createImgPage();
+
   // getPictures(inputValue)
   //   .then(({ data }) => {
   //     response = data.hits;
@@ -76,28 +97,6 @@ const onSearch = e => {
   //   });
 
   // loadMoreBtnRef.setAttribute('hidden', true);
-
-  async function createImgPage() {
-    try {
-      response = await getPictures(inputValue);
-
-      await render();
-
-      if (response.data.totalHits === 0) {
-        formRef.reset();
-        return messageNotify();
-      }
-
-      Notify.success(`Hooray! We found ${response.data.totalHits} images.`);
-
-      simpleLightbox.refresh();
-      loadMoreBtnRef.removeAttribute('hidden');
-    } catch (error) {
-      console.log(error.message);
-      messageNotify();
-    }
-  }
-  createImgPage();
 };
 
 formRef.addEventListener('submit', onSearch);
