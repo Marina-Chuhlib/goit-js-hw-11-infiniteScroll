@@ -112,7 +112,7 @@ const onLoadMore = e => {
       await render();
       simpleLightbox.refresh();
 
-      const amount = Math.ceil(response.data.totalHits / perPage);
+      const amount = response.data.totalHits / perPage;
 
       if (amount < page) {
         loadMoreBtnRef.setAttribute('hidden', true);
