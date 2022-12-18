@@ -1,4 +1,5 @@
 import './css/styles.css';
+
 import { getPictures } from './getPictures';
 import { getGalleryMarkup } from './getGalleryMarkup';
 import { Notify } from 'notiflix/build/notiflix-notify-aio';
@@ -7,12 +8,6 @@ import 'simplelightbox/dist/simple-lightbox.min.css';
 
 const formRef = document.querySelector('#search-form');
 const galleryRef = document.querySelector('.gallery');
-const loadMoreBtnRef = document.querySelector('.load-more');
-
-// const { height: cardHeight } =
-// document.querySelector('.gallery').firstElementChild.getBoundingClientRect();
-
-loadMoreBtnRef.setAttribute('hidden', true);
 
 let response = [];
 let inputValue = '';
@@ -61,95 +56,64 @@ const onSearch = e => {
       Notify.success(`Hooray! We found ${response.data.totalHits} images.`);
 
       simpleLightbox.refresh();
-      loadMoreBtnRef.removeAttribute('hidden');
     } catch (error) {
       console.log(error.message);
       messageNotify();
     }
   }
   createImgPage();
-
-  // getPictures(inputValue)
-  //   .then(({ data }) => {
-  //     response = data.hits;
-
-  //     // response.length
-  //     if (data.totalHits === 0) {
-  //       formRef.reset();
-  //       return messageNotify();
-  //     }
-
-  //     Notify.success(`Hooray! We found ${data.totalHits} images.`);
-
-  //     // window.scrollBy({
-  //     //   top: cardHeight * 2,
-  //     //   behavior: 'smooth',
-  //     // });
-
-  //     render();
-
-  //     loadMoreBtnRef.removeAttribute('hidden');
-
-  //     simpleLightbox.refresh();
-  //   })
-  //   .catch(error => {
-  //     messageNotify();
-  //   });
-
-  // loadMoreBtnRef.setAttribute('hidden', true);
 };
 
 formRef.addEventListener('submit', onSearch);
 
-const onLoadMore = e => {
-  page += 1;
+function inObserver(entries) {
+  entries.forEach(entry => {
+    if (entry.isIntersecting && inputValue !== '') {
+      page += 1;
 
-  async function createImgPage() {
-    try {
-      response = await getPictures(inputValue);
+      async function createImgPage() {
+        try {
+          response = await getPictures(inputValue);
 
-      await render();
-      simpleLightbox.refresh();
+          await render();
+          smoothScrollPage();
+          simpleLightbox.refresh();
 
-      const amount = response.data.totalHits / perPage;
+          const amount = response.data.totalHits / perPage;
 
-      if (amount < page) {
-        loadMoreBtnRef.setAttribute('hidden', true);
-        formRef.reset();
-        Notify.failure(
-          "We're sorry,but you've reached the end of search results."
-        );
+          if (amount < page) {
+            observer.unobserve(document.getElementById('#sentinel'));
+            formRef.reset();
+            Notify.failure(
+              "We're sorry,but you've reached the end of search results."
+            );
+            return;
+          }
+        } catch (error) {
+          console.log(error.message);
+          messageNotify();
+        }
       }
-    } catch (error) {
-      console.log(error.message);
-      messageNotify();
+      createImgPage();
     }
-  }
-  createImgPage();
+  });
+}
 
-  // getPictures(inputValue)
-  //   .then(({ data }) => {
-  //     response = data.hits;
+const intersectionObserver = new IntersectionObserver(inObserver, {
+  rootMargin: '150px',
+});
 
-  //     render();
+intersectionObserver.observe(document.querySelector('#sentinel'));
 
-  //     simpleLightbox.refresh();
+function smoothScrollPage() {
+  const { height: cardHeight } =
+    galleryRef.firstElementChild.getBoundingClientRect();
 
-  //     const amount = data.totalHits / perPage;
-  //     if (amount < page) {
-  //       loadMoreBtnRef.setAttribute('hidden', true);
-  //       formRef.reset();
-  //       Notify.failure(
-  //         "We're sorry,but you've reached the end of search results."
-  //       );
-  //     }
-  //   })
-  //   .catch(error => {
-  //     messageNotify();
-  //   });
-};
-
-loadMoreBtnRef.addEventListener('click', onLoadMore);
+  window.scrollBy({
+    top: cardHeight * 2,
+    behavior: 'smooth',
+  });
+}
 
 function messageNotify() {
   Notify.failure(
