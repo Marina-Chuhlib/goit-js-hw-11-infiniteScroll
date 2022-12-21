@@ -1,26 +1,26 @@
 import './css/styles.css';
+import { GalleryApiService } from './api-service';
 
-import { getPictures } from './getPictures';
 import { getGalleryMarkup } from './getGalleryMarkup';
 import { Notify } from 'notiflix/build/notiflix-notify-aio';
 import SimpleLightbox from 'simplelightbox';
 import 'simplelightbox/dist/simple-lightbox.min.css';
 
+const galleryApiService = new GalleryApiService();
+
 const formRef = document.querySelector('#search-form');
 const galleryRef = document.querySelector('.gallery');
 
 let response = [];
-let inputValue = '';
+
 const simpleLightbox = new SimpleLightbox('.gallery a', {
   captionsData: 'alt',
   captionPosition: 'bottom',
   captionDelay: 250,
 });
-export let page = 1;
-export const perPage = 40;
 
 const render = () => {
-  const gallery = response.data.hits.map(getGalleryMarkup);
+  const gallery = response.hits.map(getGalleryMarkup);
   galleryRef.insertAdjacentHTML('beforeend', gallery.join(''));
 };
 
@@ -33,68 +33,69 @@ const onSearch = e => {
 
   resetGallery();
 
-  page = 1;
-
   const form = e.currentTarget;
-  inputValue = form.elements.searchQuery.value.trim();
+  galleryApiService.value = form.elements.searchQuery.value.trim();
 
-  if (!inputValue) {
+  if (galleryApiService.value === '') {
+    // observer.unobserve(document.getElementById('#sentinel'));
     return messageNotify();
   }
 
-  async function createImgPage() {
-    try {
-      response = await getPictures(inputValue);
-
-      await render();
-
-      if (response.data.totalHits === 0) {
-        formRef.reset();
-        return messageNotify();
-      }
-
-      Notify.success(`Hooray! We found ${response.data.totalHits} images.`);
-
-      simpleLightbox.refresh();
-    } catch (error) {
-      console.log(error.message);
-      messageNotify();
-    }
-  }
+  galleryApiService.resetPage();
   createImgPage();
 };
 
 formRef.addEventListener('submit', onSearch);
 
+async function createImgPage() {
+  try {
+    response = await galleryApiService.getPictures();
+
+    if (response.totalHits === 0) {
+      formRef.reset();
+      messageNotify();
+      return;
+    }
+
+    render();
+
+    Notify.success(`Hooray! We found ${response.totalHits} images.`);
+
+    simpleLightbox.refresh();
+  } catch (error) {
+    console.log(error.message);
+    messageNotify();
+  }
+}
+
+async function createMoreImgPage() {
+  try {
+    response = await galleryApiService.getPictures();
+
+    const amount = response.totalHits / galleryApiService.perPages;
+
+    if (amount < galleryApiService.pages) {
+      formRef.reset();
+      Notify.failure(
+        "We're sorry,but you've reached the end of search results."
+      );
+      observer.unobserve(document.getElementById('#sentinel'));
+      return;
+    }
+
+    smoothScrollPage();
+
+    render();
+    simpleLightbox.refresh();
+  } catch (error) {
+    console.log(error.message);
+  }
+}
+
 function inObserver(entries) {
   entries.forEach(entry => {
-    if (entry.isIntersecting && inputValue !== '') {
-      page += 1;
-
-      async function createImgPage() {
-        try {
-          response = await getPictures(inputValue);
-
-          await render();
-          smoothScrollPage();
-          simpleLightbox.refresh();
-
-          const amount = response.data.totalHits / perPage;
-
-          if (amount < page) {
-            observer.unobserve(document.getElementById('#sentinel'));
-            formRef.reset();
-            Notify.failure(
-              "We're sorry,but you've reached the end of search results."
-            );
-            return;
-          }
-        } catch (error) {
-          console.log(error.message);
-          messageNotify();
-        }
-      }
-      createImgPage();
+    if (entry.isIntersecting && galleryApiService.value !== '') {
+      createMoreImgPage();
     }
   });
 }
